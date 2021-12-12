@@ -25,8 +25,67 @@ class PlayerAI(BaseAI):
     def getPlayerNum(self):
         return self.player_num
 
+    def getOppPlayerNum(self):
+        return 3 - self.player_num
+
     def setPlayerNum(self, num):
         self.player_num = num
+
+    def eval(self, grid: Grid):
+        my_neighbors = grid.get_neighbors(grid.find(self.player_num), True)
+        opponent_neighbors = grid.get_neighbors(grid.find(self.getOppPlayerNum()), True)
+
+        return len(my_neighbors) - len(opponent_neighbors)
+
+    def move_minimize(self, grid: Grid, a, b, depth):
+        traps = grid.get_neighbors(grid.find(self.getPlayerNum()), True)
+
+        if len(traps) == 0 or depth == 5:
+            return None, self.eval(grid)
+
+        next_trap = None
+        min_utility = +10000000
+
+        for trap in traps:
+            child = grid.clone().trap(trap)
+            x, utility = self.move_maximize(child, a, b, depth+1)
+
+            if utility < min_utility:
+                next_trap = trap
+                min_utility = utility
+
+            if min_utility <= a:
+                break
+
+            if min_utility < b:
+                b = min_utility
+
+        return (next_trap, min_utility)
+
+    def move_maximize(self, grid: Grid, a, b, depth):
+        neighbors = grid.get_neighbors(self.pos, True)
+
+        if len(neighbors) == 0 or depth == 5:
+            return None, self.eval(grid)
+
+        next_pos = None
+        max_utility = -1000000
+
+        for neighbor in neighbors:
+            child = grid.clone().move(neighbor, self.player_num)
+            x, utility = self.move_minimize(child, a, b, depth+1)
+
+            if utility > max_utility:
+                next_pos = neighbor
+                max_utility = utility
+
+            if max_utility >= b:
+                break
+
+            if max_utility > a:
+                a = max_utility
+
+        return (next_pos, utility)
 
     def getMove(self, grid: Grid) -> tuple:
         """ 
@@ -42,7 +101,58 @@ class PlayerAI(BaseAI):
         You may adjust the input variables as you wish (though it is not necessary). Output has to be (x,y) coordinates.
         
         """
-        pass
+
+        next_pos, utility =  self.move_maximize(grid, -1000000, 1000000, 1)
+
+        return next_pos
+
+    def trap_minimize(self, grid: Grid, a, b, depth):
+        neighbors = grid.get_neighbors(grid.find(self.getOppPlayerNum()), True)
+
+        if len(neighbors) == 0 or depth == 5:
+            return None, self.eval(grid)
+
+        next_move, min_utility = None, +1000000
+
+        for neighbor in neighbors:
+            child = grid.clone().move(neighbor, self.getOppPlayerNum())
+            x, utility = self.trap_maximize(grid, a, b, depth+1)
+
+            if utility < min_utility:
+                next_move, min_utility = neighbor, utility
+
+            if min_utility <= a:
+                break
+
+            if min_utility < b:
+                b = min_utility
+
+        return (next_move, min_utility)
+
+
+    def trap_maximize(self, grid: Grid, a, b, depth):
+        neighbors = grid.get_neighbors(grid.find(self.getOppPlayerNum()), True)
+
+        if len(neighbors) == 0 or depth == 5:
+            return None, self.eval(grid)
+
+        next_trap, max_utility = None, -1000000
+
+        for neighbor in neighbors:
+            child = grid.clone().trap(neighbor)
+            x, utility = self.trap_minimize(child, a, b, depth+1)
+
+            if utility > max_utility:
+                next_trap = neighbor
+                max_utility = utility
+
+            if max_utility >= b:
+                break
+
+            if max_utility > a:
+                a = max_utility
+
+        return (next_trap, max_utility)
 
     def getTrap(self, grid : Grid) -> tuple:
         """ 
@@ -58,7 +168,10 @@ class PlayerAI(BaseAI):
         You may adjust the input variables as you wish (though it is not necessary). Output has to be (x,y) coordinates.
         
         """
-        pass
+
+        next_trap, utility = self.trap_maximize(grid, -1000000, 1000000, 1)
+
+        return next_trap
         
 
     
