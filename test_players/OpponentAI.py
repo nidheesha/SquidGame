@@ -9,7 +9,7 @@ from Utils import manhattan_distance
 
 # TO BE IMPLEMENTED
 # 
-class PlayerAI(BaseAI):
+class OpponentAI(BaseAI):
 
     def __init__(self) -> None:
         # You may choose to add attributes to your player - up to you!
@@ -34,15 +34,9 @@ class PlayerAI(BaseAI):
 
     def move_eval(self, grid: Grid):
         my_neighbors = grid.get_neighbors(grid.find(self.getPlayerNum()), True)
-        more_neighbors = set()
-        more_neighbors.update(my_neighbors)
-        # finding neighbors or neighbors
-        for neighbor in my_neighbors:
-            more_neighbors.update(grid.get_neighbors(neighbor))
-
         opp_neighbors = grid.get_neighbors(grid.find(self.getOppPlayerNum()), True)
 
-        return len(more_neighbors) - len(opp_neighbors)
+        return len(my_neighbors) - 2*len(opp_neighbors)
 
     def trap_eval(self, grid: Grid):
         my_neighbors = grid.get_neighbors(grid.find(self.getPlayerNum()), True)
